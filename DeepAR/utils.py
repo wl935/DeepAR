@@ -5,8 +5,8 @@ import pandas as pd
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
 import os
-from .Encoder import Encoder
-from .Decoder import Decoder
+from Encoder import Encoder
+from Decoder import Decoder
 
 os.environ['KMP_DUPLICATE_LIB_OK']='True'
 

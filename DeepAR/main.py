@@ -1,8 +1,8 @@
 import numpy as np
 import pandas as pd
-from DeepAR.Encoder import Encoder
-from DeepAR.Decoder import Decoder
-from DeepAR.utils import train_fn,deepar_dataset,read_df,inference
+from Encoder import Encoder
+from Decoder import Decoder
+from utils import train_fn,deepar_dataset,read_df,inference
 import torch
 import matplotlib.pyplot as plt
 
@@ -37,6 +37,7 @@ if __name__=='__main__':
                       covariate_size=9,
                       hidden_size=20,
                       device=device)
+    
     decoder = Decoder(seq_len=prediction_len,
                       covariate_size=9,
                       hidden_size=20)
@@ -45,20 +46,24 @@ if __name__=='__main__':
     train_df, test_df, scale = read_df(file_name=file_name, sep= sep,
                                        index_col=index_col, parse_dates=parse_dates,
                                        decimal=decimal,config=config_dict)
-    context_df = train_df.iloc[-5*context_len:].copy()
-    context_df.iloc[:, 0] = train_df.iloc[-5*context_len-1:-1, 0].values
+    #context_df = train_df.iloc[-5*context_len:].copy()
+    #context_df.iloc[:, 0] = train_df.iloc[-5*context_len-1:-1, 0].values
+    context_df = train_df.iloc[-context_len:].copy()
+    context_df.iloc[:,0] = train_df.iloc[-context_len-1:-1,0].values
 
     our_dataset = deepar_dataset(train_df, context_len=context_len, prediction_len=prediction_len)
-    train_fn(encoder, decoder, our_dataset, lr=1e-3, batch_size=128, num_epochs=100, device=device)
+    train_fn(encoder, decoder, our_dataset, lr=1e-3, batch_size=128, num_epochs=200, device=device)
     mus_list, sigmas_list = inference(context_df, device, encoder, decoder, train_df, test_df, prediction_len)
     mu_df = pd.DataFrame(index=test_df.index, data= {'mus': mus_list})
     mu_df = mu_df * scale
     sigma_df = pd.DataFrame(index=test_df.index, data= {'sigmas':sigmas_list})
-    sigma_df = sigma_df * np.sqrt(scale)
+    #sigma_df = sigma_df * np.sqrt(scale)
+    print(f"scale is: {scale}")
+    sigma_df = sigma_df * scale
     mu_df['upper_bound'] = mu_df['mus'] + 3 * sigma_df['sigmas']
     mu_df['lower_bound'] = mu_df['mus'] - 3 * sigma_df['sigmas']
     test_df = test_df * scale
     fig = plt.figure()
     plt.plot(test_df.iloc[:, 0])
     plt.plot(mu_df)
-    plt.savefig('result.png')
+    plt.savefig('result2.png')
